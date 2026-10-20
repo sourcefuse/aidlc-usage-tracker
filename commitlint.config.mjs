@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * Conventional Commits, enforced locally by the husky commit-msg hook and in CI on the PR
- * title (PRs are squash-merged, so the title becomes the commit on main).
+ * Conventional Commits for local commits, enforced by the husky commit-msg hook.
+ * PR titles are checked in CI by .github/workflows/pr-title.yml; keep `type-enum` in sync.
  * @type {import("@commitlint/types").UserConfig}
  */
 export default {

@@ -198,7 +198,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
   - `output.ts`: CSV, JSON and safe writes;
   - `cli.ts`: the command line;
   - `index.ts`: the public API.
-- **Commit checks:** husky and commitlint check commit messages locally, and CI checks the PR title.
+- **Commit checks:** husky runs commitlint on commit messages locally, and CI checks the PR title with `amannn/action-semantic-pull-request`.
 - **Merging:** PRs are squash-merged with Conventional Commit titles.
 - **Releasing:** releases are tag-only (`vX.Y.Z` plus a floating `v0`) and created from a manual workflow
   with [release-it](https://github.com/release-it/release-it). Release notes are on the
