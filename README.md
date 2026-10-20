@@ -3,9 +3,11 @@
 [![CI](https://github.com/sourcefuse/aidlc-usage-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/sourcefuse/aidlc-usage-tracker/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/sourcefuse/aidlc-usage-tracker/badge)](https://scorecard.dev/viewer/?uri=github.com/sourcefuse/aidlc-usage-tracker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![AWS AI-DLC](https://img.shields.io/badge/AWS%20AI--DLC-2.10.0%20%E2%80%93%202.11.1-FF9900)](#compatibility)
 
-Team-level **adoption** and **token/cost** reporting for [AWS AI-DLC](https://github.com/awslabs/aidlc-workflows),
-built entirely from the audit records AI-DLC already commits to your repository.
+**A community extension for [AWS AI-DLC](https://github.com/awslabs/aidlc-workflows).** It provides
+team-level **adoption** and **token/cost** reporting, built entirely from the audit records AI-DLC
+already commits to your repository.
 
 > **Status: experimental (v0).** The output format may change before v1.
 
@@ -202,6 +204,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
   with [release-it](https://github.com/release-it/release-it). Release notes are on the
   [Releases](https://github.com/sourcefuse/aidlc-usage-tracker/releases) page.
 
+## Acknowledgements
+
+This project builds on [AWS AI-DLC (AI-Driven Development Life Cycle)](https://github.com/awslabs/aidlc-workflows)
+by Amazon Web Services. All usage accounting (token counting, pricing and audit records) is done by
+AI-DLC itself; this tracker only reads and aggregates what AI-DLC records. Thanks to the AI-DLC
+maintainers and contributors.
+
+AWS and AI-DLC are trademarks of Amazon.com, Inc. or its affiliates. This is an independent community
+project by SourceFuse. It is not affiliated with, sponsored by or endorsed by Amazon Web Services.
+
 ## License
 
-[MIT](LICENSE) © SourceFuse
+[MIT](LICENSE) © 2026 SourceFuse
