@@ -184,6 +184,14 @@ describe("identity and CSV safety", () => {
     assert.equal(noreply.key, normaliseIdentity("octo-cat@users.noreply.github.com", "").key);
   });
 
+  it("normalises hostile author strings in linear time (no ReDoS)", () => {
+    const hostile = `${'"'.repeat(50_000)}x${'"'.repeat(50_000)}`;
+    const started = performance.now();
+    assert.equal(normaliseIdentity(hostile, hostile).name, "x");
+    assert.equal(normaliseIdentity(`${"1".repeat(50_000)}`, "").login, null);
+    assert.ok(performance.now() - started < 200, "normalisation must stay fast on adversarial input");
+  });
+
   it("neutralises spreadsheet formulas and quotes special characters", () => {
     assert.equal(csvCell("=HYPERLINK(1)"), "'=HYPERLINK(1)");
     assert.equal(csvCell("-cmd"), "'-cmd");

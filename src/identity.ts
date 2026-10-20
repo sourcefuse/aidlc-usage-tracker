@@ -3,15 +3,34 @@
 
 import type { Identity, RosterMember } from "./types.ts";
 
-const NOREPLY_EMAIL = /^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$/;
-const QUOTES = /^["'“”‘’]+|["'“”‘’]+$/g;
+const NOREPLY_DOMAIN = "@users.noreply.github.com";
+const QUOTES = new Set(['"', "'", "“", "”", "‘", "’"]);
+
+/**
+ * Trims whitespace and surrounding quote characters. Implemented as a linear scan rather
+ * than a regex because git author fields are untrusted input (avoids ReDoS).
+ */
+function trimQuotes(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && (QUOTES.has(value[start]) || value[start].trim() === "")) start++;
+  while (end > start && (QUOTES.has(value[end - 1]) || value[end - 1].trim() === "")) end--;
+  return value.slice(start, end);
+}
+
+/** `12345+login@users.noreply.github.com` or `login@users.noreply.github.com` -> `login`. */
+function noreplyLogin(email: string): string | null {
+  if (!email.endsWith(NOREPLY_DOMAIN)) return null;
+  const local = email.slice(0, -NOREPLY_DOMAIN.length);
+  const login = local.slice(local.indexOf("+") + 1);
+  return login && !login.includes("@") ? login : null;
+}
 
 /** Normalises a git author into a stable identity. Handles noreply addresses and stray quotes. */
 export function normaliseIdentity(rawEmail: string, rawName: string): Identity {
-  const clean = (s: string) => s.trim().replace(QUOTES, "").trim();
-  const email = clean(rawEmail).toLowerCase();
-  const name = clean(rawName);
-  const login = NOREPLY_EMAIL.exec(email)?.[1] ?? null;
+  const email = trimQuotes(rawEmail).toLowerCase();
+  const name = trimQuotes(rawName);
+  const login = noreplyLogin(email);
   return { key: login ? `github:${login}` : email, email, login, name };
 }
 
