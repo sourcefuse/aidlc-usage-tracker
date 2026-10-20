@@ -57,12 +57,23 @@ runs:
         INPUT_SINCE: ${{ inputs.since }}
         INPUT_ROSTER: ${{ inputs.roster }}
         INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
+      # Node's permission model confines the reporter: it can read only its own source, the
+      # repository (and the roster, if given) and can write only to the output directory.
+      # Child processes are allowed solely for the read-only `git log` used for attribution.
       run: |
         set -euo pipefail
+        repo="$(cd "$INPUT_PATH" && pwd -P)"
         out="${INPUT_OUTPUT_DIR:-$RUNNER_TEMP/aidlc-usage-report}"
-        args=(--repo "$INPUT_PATH" --since "$INPUT_SINCE" --out "$out")
-        if [[ -n "$INPUT_ROSTER" ]]; then args+=(--roster "$INPUT_ROSTER"); fi
-        node "$GITHUB_ACTION_PATH/src/aidlc-usage-report.ts" "${args[@]}"
+        mkdir -p "$out" && out="$(cd "$out" && pwd -P)"
+        src="$(cd "$GITHUB_ACTION_PATH/src" && pwd -P)"
+        perms=(--permission "--allow-fs-read=$src" "--allow-fs-read=$repo" "--allow-fs-read=$out" "--allow-fs-write=$out" --allow-child-process)
+        args=(--repo "$repo" --since "$INPUT_SINCE" --out "$out")
+        if [[ -n "$INPUT_ROSTER" ]]; then
+          roster="$(cd "$(dirname "$INPUT_ROSTER")" && pwd -P)/$(basename "$INPUT_ROSTER")"
+          perms+=("--allow-fs-read=$roster")
+          args+=(--roster "$roster")
+        fi
+        node "${perms[@]}" "$src/cli.ts" "${args[@]}"
         echo "dir=$out" >> "$GITHUB_OUTPUT"
 
     - name: Upload report artifact

@@ -62,7 +62,7 @@ jobs:
       - name: Generate a report with Bun
         run: |
           bun tests/make-sample-repo.ts "$RUNNER_TEMP/sample"
-          bun src/aidlc-usage-report.ts --repo "$RUNNER_TEMP/sample" --since 2026-01-01 --out "$RUNNER_TEMP/out"
+          bun src/cli.ts --repo "$RUNNER_TEMP/sample" --since 2026-01-01 --out "$RUNNER_TEMP/out"
           test -s "$RUNNER_TEMP/out/usage-report.json"
 
   action:
