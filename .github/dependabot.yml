@@ -21,6 +21,11 @@ updates:
     commit-message:
       prefix: build
       include: scope
+    ignore:
+      # Node.js type majors must track the Node.js versions we support (22 and 24), otherwise the
+      # typechecker accepts APIs that do not exist at runtime. Bump this major deliberately.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       dev-dependencies:
         dependency-type: development
