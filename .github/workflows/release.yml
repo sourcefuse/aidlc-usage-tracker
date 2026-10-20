@@ -1,0 +1,61 @@
+# Manual, tag-only release: release-it derives the next version from the Conventional
+# Commit titles on main, creates the vX.Y.Z tag and a GitHub Release with generated notes,
+# and this workflow then moves the floating major tag (e.g. v0) that action users pin to.
+# Nothing is committed to main, so no branch-protection bypass or long-lived token is needed.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Preview the release without creating tags or a GitHub Release
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write # push the release tag and create the GitHub Release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true # release-it pushes the new tag with this job's GITHUB_TOKEN
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          if [[ "$DRY_RUN" == "true" ]]; then
+            npx --no-install release-it --ci --dry-run
+          else
+            npx --no-install release-it --ci
+          fi
+      - name: Move floating major tag
+        if: ${{ !inputs.dry-run }}
+        run: |
+          version="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*')"
+          major="${version%%.*}"
+          git tag -f "$major" "$version^{}"
+          git push -f origin "refs/tags/$major"
+          echo "Released $version and moved $major" >> "$GITHUB_STEP_SUMMARY"
