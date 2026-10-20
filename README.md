@@ -17,14 +17,14 @@ The tracker answers two questions:
 2. **What did each implementation (AI-DLC intent) cost in tokens and estimated USD?**
 
 There is nothing to install on developer machines: no hooks, agents, databases or external services.
-A GitHub Action reads `main` on a schedule and uploads CSV and JSON reports as a workflow artifact.
+A GitHub Action reads `main` whenever AI-DLC work is merged, and uploads CSV and JSON reports as a workflow artifact.
 
 ## How it works
 
 ```text
 Developer runs AI-DLC ─► commits aidlc/ (incl. audit/*.md) on a branch ─► PR ─► merged to main
                                                                                    │
-Scheduled workflow in the same repo ─► this action reads main ─► reports as an artifact
+Workflow in the same repo (on merge) ─► this action reads main ─► reports as an artifact
 ```
 
 AI-DLC writes one audit file per clone (`aidlc/spaces/<space>/intents/<intent>/audit/<host>-<clone>.md`).
@@ -41,29 +41,147 @@ in that file. The tracker:
 - **Reads only an allow-list of fields:** event, timestamp, stage and usage numbers. Free-text fields can
   contain prompts or client requirements and are never read.
 
-## Quick start
+## Setup
 
-1. Make sure your AI-DLC repository commits `aidlc/`, including the `audit/` folders, as AI-DLC's own
-   generated `.gitignore` intends, and that stories are merged to `main` through PRs.
-2. Copy [`templates/aidlc-usage-report.yml`](templates/aidlc-usage-report.yml) to
-   `.github/workflows/aidlc-usage-report.yml` in that repository.
-3. Optionally add a roster at `.aidlc-usage/team.json` (see [`examples/team.json`](examples/team.json)), so that
-   team members with no recorded usage are listed too.
-4. Run the workflow, either manually or on its daily schedule, and download the `aidlc-usage-report` artifact.
+Set this up once per project, in the repository where the team's AI-DLC workspace (`aidlc/`) lives.
+It takes about 10 minutes.
 
-The core of the workflow:
+### Prerequisites
+
+- **AI-DLC run through Claude Code.** This is the only harness for which AI-DLC records token usage.
+- **The repository commits `aidlc/`, including every `audit/` folder.** AI-DLC's own generated
+  `.gitignore` already does this. Keep it as generated, and never commit `aidlc/.aidlc-sessions/`.
+- **Stories reach `main` through pull requests.** Squash, merge-commit and rebase merges all work.
+- **GitHub Actions is enabled** for the repository. No secrets or tokens are needed.
+
+### Step 1: Add the workflow
+
+Copy [`templates/aidlc-usage-report.yml`](templates/aidlc-usage-report.yml) to
+`.github/workflows/aidlc-usage-report.yml` in your AI-DLC repository:
 
 ```yaml
-- uses: actions/checkout@<sha>
-  with:
-    fetch-depth: 0 # needed for attribution
-    persist-credentials: false
-- uses: sourcefuse/aidlc-usage-tracker@v0 # or pin a full commit SHA
-  with:
-    since: 30d
+name: AI-DLC usage report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "aidlc/spaces/*/intents/intents.json"
+      - "aidlc/spaces/*/intents/**/audit/*.md" # intent-level and space-level audit files
+      - ".aidlc-usage/team.json"
+  workflow_dispatch:
+  # Optional weekly snapshot, e.g. for a Monday review:
+  # schedule:
+  #   - cron: "0 2 * * 1"
+
+permissions: {}
+
+concurrency:
+  group: aidlc-usage-report
+  cancel-in-progress: true
+
+jobs:
+  report:
+    name: Generate usage report
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0 # full history is needed to attribute work to developers
+          persist-credentials: false
+      - uses: sourcefuse/aidlc-usage-tracker@ba3c481053062d78f44ffcdd2b8f587dc2661983 # v0.1.0
+        with:
+          since: 30d
 ```
 
-### Inputs
+Points to note:
+
+- **When it runs:** when a file the report reads changes on `main`, or on demand. Those files are the
+  intent registry, the AI-DLC audit files and the roster. Changes to the knowledge base, codekb, memory or
+  stage artifacts don't trigger a run, because they never change the report. If you pass a custom
+  `roster` path, add it to `paths`.
+- **Weekly snapshot (optional):** activity columns such as `active_days` and `roster_status` cover the
+  period ending when the report ran. In weeks with no merges, the latest report stays as of the last
+  merge. Uncomment `schedule` to also get a fresh report every Monday.
+- **`fetch-depth: 0` is required.** Without full history the action cannot tell who did the work.
+- **Pinning:** the action is pinned to a release's full commit SHA rather than a tag. A tag can be moved
+  to different code, so a SHA guarantees you run exactly the release you reviewed. Step 3 keeps it up to date.
+
+### Step 2: Add the team roster (recommended)
+
+Create `.aidlc-usage/team.json` listing everyone expected to use AI-DLC. Without a roster, the report can't
+show who has **no** recorded usage.
+
+```json
+{
+  "members": [
+    { "name": "Ada Lovelace", "github": "ada-l", "emails": ["ada@example.com", "ada.personal@example.org"] }
+  ]
+}
+```
+
+- **`name`** is how the person appears in the reports.
+- **`emails`** lists every address the person commits with (`git config user.email`).
+- **`github`** is the person's GitHub login. It is used when commits come from a
+  `…@users.noreply.github.com` address, as with web-UI squash merges.
+
+Authors who match nobody appear as `unmatched`. Add their address to the right member.
+See also [`examples/team.json`](examples/team.json).
+
+### Step 3: Keep the action up to date
+
+Enable Dependabot for GitHub Actions in your AI-DLC repository, so you get a PR that bumps the pinned
+SHA whenever a new tracker release is published. Add `.github/dependabot.yml`, or merge this entry into
+an existing one:
+
+```yaml
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+```
+
+If you'd rather receive every v0 release automatically without review, use
+`sourcefuse/aidlc-usage-tracker@v0` instead of the SHA. It's convenient, but it trusts every future v0
+release unseen.
+
+### Step 4: Run it and check the output
+
+1. Go to **Actions → AI-DLC usage report → Run workflow**.
+2. When the run finishes, download the **`aidlc-usage-report`** artifact from the run's summary page.
+3. Check that:
+   - everyone on the roster appears;
+   - no one is `unmatched` (if someone is, add their email to the roster);
+   - the run log shows no `warning:` lines.
+
+### Troubleshooting
+
+| Symptom | Likely cause and fix |
+|---|---|
+| `No aidlc/spaces directory found` | `aidlc/` isn't committed on `main`, or `path` points at the wrong folder. |
+| Everything is `(unattributed)`, or a "shallow clone" warning | The checkout is missing `fetch-depth: 0`. |
+| A teammate shows as `unmatched` | They commit with an email that isn't in the roster. Add it. |
+| A teammate shows as `no_usage_recorded` but uses AI-DLC | Their work isn't merged to `main` yet, or their `audit/` files weren't committed. |
+| Usage cells are blank | The intent hasn't completed a stage yet, it was run outside Claude Code, or AI-DLC usage tracking is disabled (`AIDLC_DISABLE_USAGE_TRACKING`). |
+
+### What developers do from now on
+
+- **One intent per story.** Run AI-DLC through Claude Code, with one intent per user story, on your own
+  branch and in your own clone.
+- **Commit `aidlc/` with your story.** Include the `audit/*.md` files, and **push at the end of every
+  working session**.
+- **Merge to `main`.** Work is counted once its PR is merged.
+- **Finish the AI-DLC workflow,** so the intent's full cost is recorded.
+- **Commit with your work email,** or make sure the roster lists the address you use.
+- **Leave audit files alone.** Don't edit, delete or rewrite them, and don't commit another developer's.
+  Never paste their contents anywhere public: they contain prompts.
+
+## Action inputs and outputs
 
 | Input | Default | Description |
 |---|---|---|
@@ -116,20 +234,6 @@ than one author goes to an `(ambiguous)` row, and usage in a file with no attrib
 ### `usage-report.json`
 
 This is the normalised source of all three CSVs, for dashboards or other integrations (`schema_version: 1`).
-
-## Roster
-
-```json
-{
-  "members": [
-    { "name": "Ada Lovelace", "github": "ada-l", "emails": ["ada@example.com", "ada.personal@example.org"] }
-  ]
-}
-```
-
-Members are matched on any listed email, or on their GitHub login when commits use a
-`@users.noreply.github.com` address. Authors who match nobody are reported as `unmatched`. Add their
-address to the right member.
 
 ## Run it locally
 

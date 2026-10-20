@@ -4,13 +4,20 @@
 name: AI-DLC usage report
 
 on:
-  schedule:
-    - cron: "0 2 * * *" # daily, 02:00 UTC
+  # Report whenever something the report reads lands on main: the intent registry, AI-DLC
+  # audit files (intent-level and space-level) or the roster. Knowledge base, codekb, memory
+  # and stage artifacts never change the report, so they don't trigger it.
+  push:
+    branches: [main]
+    paths:
+      - "aidlc/spaces/*/intents/intents.json"
+      - "aidlc/spaces/*/intents/**/audit/*.md"
+      - ".aidlc-usage/team.json"
+  # Run on demand from the Actions tab.
   workflow_dispatch:
-  # Optional: refresh whenever AI-DLC records land on main.
-  # push:
-  #   branches: [main]
-  #   paths: ["aidlc/**"]
+  # Optional: a weekly snapshot even in quiet weeks, e.g. for a Monday review.
+  # schedule:
+  #   - cron: "0 2 * * 1" # Mondays, 02:00 UTC
 
 permissions: {}
 
@@ -20,6 +27,7 @@ concurrency:
 
 jobs:
   report:
+    name: Generate usage report
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,9 +37,9 @@ jobs:
           ref: main
           fetch-depth: 0 # full history is needed to attribute audit files to developers
           persist-credentials: false
-      # Pin to a full commit SHA for maximum supply-chain safety (Dependabot can bump it),
-      # or use @v0 to receive fixes automatically.
-      - uses: sourcefuse/aidlc-usage-tracker@v0
+      # Pinned to the full commit SHA of a release for supply-chain safety. Enable Dependabot
+      # for github-actions in this repository to receive PRs when a new release is out.
+      - uses: sourcefuse/aidlc-usage-tracker@ba3c481053062d78f44ffcdd2b8f587dc2661983 # v0.1.0
         with:
           since: 30d
           # roster: .aidlc-usage/team.json   # default location; see examples/team.json
