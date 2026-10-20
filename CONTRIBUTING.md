@@ -8,11 +8,27 @@ larger than a bug fix before you start.
 Requirements: Node.js 22.18 or later (`.nvmrc` pins 24), git.
 
 ```sh
-npm ci --ignore-scripts
-npm run check          # typecheck + lint + tests
+npm ci --ignore-scripts   # never run third-party install scripts
+npm run prepare           # installs the husky git hooks (commit-msg: commitlint, pre-commit: npm run check)
+npm run check             # typecheck + lint + tests
 node tests/make-sample-repo.ts /tmp/sample
-node src/aidlc-usage-report.ts --repo /tmp/sample --since 2026-01-01 --out /tmp/report
+node src/cli.ts --repo /tmp/sample --since 2026-01-01 --out /tmp/report
 ```
+
+Source layout:
+
+| Module | Responsibility |
+|---|---|
+| `src/workspace.ts` | The **only** code that reads the repository: allow-listed paths, no symlinks, size and count caps |
+| `src/audit.ts` | Parses audit blocks; reads allow-listed fields only |
+| `src/accounting.ts` | Latest-snapshot accounting per audit file |
+| `src/git.ts` | Read-only, shell-free `git log` for attribution |
+| `src/identity.ts` | Identity normalisation and roster validation |
+| `src/report.ts` | Assembles intents, developers and audit-file rows |
+| `src/output.ts` | CSV/JSON rendering and safe writes |
+| `src/cli.ts`, `src/index.ts` | CLI entry point and public API |
+
+Every `.ts` file starts with the SourceFuse copyright and `SPDX-License-Identifier: MIT` header. A test enforces this.
 
 There is no build step. Node runs the TypeScript directly through type stripping, so use only
 [erasable syntax](https://www.typescriptlang.org/tsconfig/#erasableSyntaxOnly): no `enum`, `namespace`
@@ -22,13 +38,13 @@ The reporter has **zero runtime dependencies**. Please keep it that way.
 
 ## Pull requests
 
+- Commit messages are checked by commitlint in the `commit-msg` hook, and `npm run check` runs before each commit.
 - PRs are **squash-merged**. The **PR title** becomes the commit on `main`, must follow
   [Conventional Commits](https://www.conventionalcommits.org/), and is checked in CI:
   - `fix: …` produces a patch release;
   - `feat: …` produces a minor release;
   - `feat!: …`, or a `BREAKING CHANGE:` footer, produces a major release;
   - `docs:`, `test:`, `ci:`, `build:`, `chore:` and `refactor:` don't trigger a release.
-- Individual commits on your branch don't need to follow any convention.
 - CI must pass. That covers lint, typecheck, tests on Node 22 and 24, the Bun run, the action smoke
   test, zizmor, CodeQL and dependency review.
 

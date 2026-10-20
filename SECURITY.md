@@ -15,6 +15,9 @@ Include what you found, how to reproduce it, and its impact. We aim to acknowled
 ## What this project does with your data
 
 - It only **reads** the repository it runs in. It never writes to it, pushes, or calls any network service.
+- It reads only allow-listed paths under `aidlc/spaces/` (plus `.aidlc-usage/team.json`). It never follows
+  symbolic links and caps file sizes. In the GitHub Action, Node's permission model enforces that boundary
+  at runtime.
 - It reads an allow-list of audit fields (event names, timestamps, stage names and usage numbers).
   Free-text fields, which can contain prompts or client requirements, are never read into the output.
 - Reports contain developer names and email addresses taken from git history. They are uploaded only

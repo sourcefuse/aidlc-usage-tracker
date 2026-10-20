@@ -135,7 +135,7 @@ You need Node.js 22.18 or later. There's no `npm install` and no build step:
 
 ```sh
 git clone https://github.com/sourcefuse/aidlc-usage-tracker
-node aidlc-usage-tracker/src/aidlc-usage-report.ts --repo path/to/your-aidlc-repo --since 30d --out ./report
+node aidlc-usage-tracker/src/cli.ts --repo path/to/your-aidlc-repo --since 30d --out ./report
 ```
 
 ## Limitations
@@ -163,6 +163,23 @@ rather than failing silently. Please open an issue.
 
 ## Security and privacy
 
+The reporter treats the repository it reads as untrusted input.
+
+- **Allow-listed reads only.** It reads only `aidlc/spaces/<space>/intents/intents.json`,
+  `…/intents/audit/*.md`, `…/intents/<intent>/audit/*.md` and `.aidlc-usage/team.json`.
+- **No symlinks or odd names.** Symbolic links are never followed, at any level. Hidden or unusual
+  file names are ignored.
+- **Size and count limits.** File sizes and counts are capped.
+- **Free text is never read.** Only an allow-list of fields is parsed out of each audit block.
+- **Safe git calls.** git runs without a shell, with fixed arguments, a literal pathspec, and no pager or
+  diff drivers.
+- **Safe writes.** Output goes only to the four report files. They are created through `O_NOFOLLOW`
+  with owner-only permissions, and never inside `aidlc/`.
+- **Runtime sandbox.** In the GitHub Action, Node's
+  [permission model](https://nodejs.org/api/permissions.html) enforces the same boundary at runtime:
+  the process can read only its own source, the repository and the roster, and can write only to the
+  output directory.
+
 See [SECURITY.md](SECURITY.md). Reports include developer names and emails from git history, and are
 visible to anyone who can read the repository's Actions artifacts. Treat your AI-DLC repository as
 confidential: its committed audit records contain prompts.
@@ -170,6 +187,16 @@ confidential: its committed audit records contain prompts.
 ## Contributing and releases
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Code layout:** the source lives in small modules under `src/`:
+  - `workspace.ts`: sandboxed reads;
+  - `audit.ts`: parsing;
+  - `accounting.ts`: the accounting rules;
+  - `git.ts`: attribution;
+  - `report.ts`: assembling the report;
+  - `output.ts`: CSV, JSON and safe writes;
+  - `cli.ts`: the command line;
+  - `index.ts`: the public API.
+- **Commit checks:** husky and commitlint check commit messages locally, and CI checks the PR title.
 - **Merging:** PRs are squash-merged with Conventional Commit titles.
 - **Releasing:** releases are tag-only (`vX.Y.Z` plus a floating `v0`) and created from a manual workflow
   with [release-it](https://github.com/release-it/release-it). Release notes are on the
