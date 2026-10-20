@@ -1,8 +1,11 @@
+// Copyright (c) 2026 SourceFuse
+// SPDX-License-Identifier: MIT
+
 /**
  * Builds a small synthetic AI-DLC repository with git history, used by the CI smoke test
  * of the composite action and handy for trying the CLI locally:
  *
- *   node tests/make-sample-repo.ts /tmp/sample && node src/aidlc-usage-report.ts --repo /tmp/sample
+ *   node tests/make-sample-repo.ts /tmp/sample && node src/cli.ts --repo /tmp/sample
  */
 import { resolve } from "node:path";
 import {

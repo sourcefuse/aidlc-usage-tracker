@@ -1,9 +1,13 @@
+// Copyright (c) 2026 SourceFuse
+// SPDX-License-Identifier: MIT
+
 import assert from "node:assert/strict";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
+  AidlcWorkspace,
   AMBIGUOUS,
   accountShard,
   buildReport,
@@ -16,7 +20,7 @@ import {
   type RosterMember,
   renderCsvs,
   tokenTotal,
-} from "../src/aidlc-usage-report.ts";
+} from "../src/index.ts";
 import {
   block,
   CANARY,
@@ -39,7 +43,7 @@ import {
 const UNTIL = new Date("2026-03-01T00:00:00Z");
 const SINCE = new Date("2026-01-01T00:00:00Z");
 const report = (repo: TestRepo, roster: RosterMember[] | null = null): Report =>
-  buildReport({ repo: repo.dir, since: SINCE, until: UNTIL, roster });
+  buildReport(AidlcWorkspace.open(repo.dir), { since: SINCE, until: UNTIL, roster });
 const intent = (r: Report, dir: string) => {
   const found = r.intents.find((i) => i.dir_name === dir);
   assert.ok(found, `intent ${dir} missing`);

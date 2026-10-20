@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SourceFuse
+// SPDX-License-Identifier: MIT
+
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
