@@ -1,0 +1,6 @@
+{
+  "members": [
+    { "name": "Ada Lovelace", "github": "ada-l", "emails": ["ada@example.com"] },
+    { "name": "Alan Turing", "github": "aturing", "emails": ["alan@example.com", "alan.personal@example.org"] }
+  ]
+}

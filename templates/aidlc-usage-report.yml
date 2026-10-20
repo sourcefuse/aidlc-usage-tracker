@@ -1,0 +1,38 @@
+# Copy to .github/workflows/aidlc-usage-report.yml in your project's AI-DLC repository.
+# It reads the AI-DLC audit records merged to main and uploads CSV + JSON reports as a
+# workflow artifact. Nothing is committed back to the repository.
+name: AI-DLC usage report
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # daily, 02:00 UTC
+  workflow_dispatch:
+  # Optional: refresh whenever AI-DLC records land on main.
+  # push:
+  #   branches: [main]
+  #   paths: ["aidlc/**"]
+
+permissions: {}
+
+concurrency:
+  group: aidlc-usage-report
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0 # full history is needed to attribute audit files to developers
+          persist-credentials: false
+      # Pin to a full commit SHA for maximum supply-chain safety (Dependabot can bump it),
+      # or use @v0 to receive fixes automatically.
+      - uses: sourcefuse/aidlc-usage-tracker@v0
+        with:
+          since: 30d
+          # roster: .aidlc-usage/team.json   # default location; see examples/team.json
+          # retention-days: "90"
