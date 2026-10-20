@@ -1,0 +1,48 @@
+{
+  "name": "aidlc-usage-tracker",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Team-level AI-DLC adoption and token/cost reporting from committed AWS AI-DLC audit records.",
+  "license": "MIT",
+  "author": "SourceFuse",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sourcefuse/aidlc-usage-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sourcefuse/aidlc-usage-tracker/issues"
+  },
+  "homepage": "https://github.com/sourcefuse/aidlc-usage-tracker#readme",
+  "keywords": [
+    "aidlc",
+    "ai-dlc",
+    "claude-code",
+    "github-action",
+    "usage",
+    "cost",
+    "tokens"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "report": "node src/aidlc-usage-report.ts",
+    "typecheck": "tsc -p .",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "node --test \"tests/**/*.test.ts\"",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "release": "release-it"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@release-it/conventional-changelog": "12.0.2",
+    "@types/node": "24.19.2",
+    "release-it": "21.1.1",
+    "typescript": "7.0.2"
+  },
+  "overrides": {
+    "basic-ftp": "6.2.3"
+  }
+}
