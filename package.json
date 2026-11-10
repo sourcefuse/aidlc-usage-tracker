@@ -38,13 +38,13 @@
     "commitlint": "commitlint"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.4",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@release-it/conventional-changelog": "12.0.2",
     "@types/node": "24.19.2",
     "husky": "9.1.7",
-    "release-it": "21.1.1",
+    "release-it": "21.1.2",
     "typescript": "7.0.2"
   },
   "overrides": {
